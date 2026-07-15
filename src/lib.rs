@@ -69,3 +69,87 @@ impl ContractRegistry {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use soroban_sdk::testutils::Address as _;
+
+    fn sample_entry(env: &Env, maintainer: &Address) -> ContractEntry {
+        ContractEntry {
+            address: String::from_str(env, "CABCDEF0000000000000000000000000000000000000000000000000000"),
+            name: String::from_str(env, "example-token"),
+            version: String::from_str(env, "1.0.0"),
+            maintainer: maintainer.clone(),
+            audit_status: AuditStatus::Unaudited,
+            registered_at: 1,
+        }
+    }
+
+    #[test]
+    fn test_register_contract_success() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(ContractRegistry, ());
+        let client = ContractRegistryClient::new(&env, &contract_id);
+
+        let maintainer = Address::generate(&env);
+        let entry = sample_entry(&env, &maintainer);
+
+        client.register_contract(&entry);
+
+        let fetched = client.get_contract(&entry.address);
+        assert_eq!(fetched, entry);
+    }
+
+    #[test]
+    fn test_register_contract_duplicate_fails() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(ContractRegistry, ());
+        let client = ContractRegistryClient::new(&env, &contract_id);
+
+        let maintainer = Address::generate(&env);
+        let entry = sample_entry(&env, &maintainer);
+
+        client.register_contract(&entry);
+        let result = client.try_register_contract(&entry);
+
+        assert_eq!(result, Err(Ok(ContractError::AlreadyRegistered)));
+    }
+
+    #[test]
+    fn test_get_contract_not_found() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(ContractRegistry, ());
+        let client = ContractRegistryClient::new(&env, &contract_id);
+
+        let missing_address = String::from_str(&env, "CDOESNOTEXIST0000000000000000000000000000000000000000000000");
+        let result = client.try_get_contract(&missing_address);
+
+        assert_eq!(result, Err(Ok(ContractError::NotFound)));
+    }
+
+    #[test]
+    fn test_update_audit_status_unauthorized() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(ContractRegistry, ());
+        let client = ContractRegistryClient::new(&env, &contract_id);
+
+        let maintainer = Address::generate(&env);
+        let impostor = Address::generate(&env);
+        let entry = sample_entry(&env, &maintainer);
+
+        client.register_contract(&entry);
+
+        let result = client.try_update_audit_status(&entry.address, &impostor, &AuditStatus::Verified);
+
+        assert_eq!(result, Err(Ok(ContractError::Unauthorized)));
+    }
+}
