@@ -1,14 +1,16 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+#![no_std]
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod errors;
+mod storage;
+mod types;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+use soroban_sdk::{contract, contractimpl};
+
+pub use errors::ContractError;
+pub use types::{AuditStatus, ContractEntry};
+
+#[contract]
+pub struct ContractRegistry;
+
+#[contractimpl]
+impl ContractRegistry {}
