@@ -4,7 +4,7 @@ mod errors;
 mod storage;
 mod types;
 
-use soroban_sdk::{contract, contractimpl, symbol_short, Env, String};
+use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String};
 
 pub use errors::ContractError;
 pub use types::{AuditStatus, ContractEntry};
@@ -40,5 +40,32 @@ impl ContractRegistry {
     /// Fetches a registered contract entry by its contract address.
     pub fn get_contract(env: Env, address: String) -> Result<ContractEntry, ContractError> {
         storage::get_contract(&env, &address).ok_or(ContractError::NotFound)
+    }
+
+    /// Updates the audit status of a registered contract.
+    ///
+    /// Only the original maintainer may update the audit status.
+    pub fn update_audit_status(
+        env: Env,
+        address: String,
+        caller: Address,
+        new_status: AuditStatus,
+    ) -> Result<(), ContractError> {
+        caller.require_auth();
+
+        let mut entry =
+            storage::get_contract(&env, &address).ok_or(ContractError::NotFound)?;
+
+        if entry.maintainer != caller {
+            return Err(ContractError::Unauthorized);
+        }
+
+        entry.audit_status = new_status;
+        storage::save_contract(&env, &entry);
+
+        env.events()
+            .publish((symbol_short!("audit"),), entry.address);
+
+        Ok(())
     }
 }
