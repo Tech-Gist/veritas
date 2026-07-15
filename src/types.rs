@@ -13,7 +13,7 @@ pub enum AuditStatus {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ContractEntry {
-    pub address: Address,
+    pub address: String,
     pub name: String,
     pub version: String,
     pub maintainer: Address,
