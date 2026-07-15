@@ -21,9 +21,6 @@ jobs:
       - name: Cache cargo registry and build artifacts
         uses: Swatinem/rust-cache@v2
 
-      - name: Install soroban-cli
-        run: cargo install soroban-cli --version 21.0.0 --locked
-
       - name: Build contract (wasm32 release)
         run: cargo build --target wasm32-unknown-unknown --release
 
