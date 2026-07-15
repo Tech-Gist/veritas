@@ -4,7 +4,7 @@ mod errors;
 mod storage;
 mod types;
 
-use soroban_sdk::{contract, contractimpl, symbol_short, Env};
+use soroban_sdk::{contract, contractimpl, symbol_short, Env, String};
 
 pub use errors::ContractError;
 pub use types::{AuditStatus, ContractEntry};
@@ -35,5 +35,10 @@ impl ContractRegistry {
             .publish((symbol_short!("registrd"),), entry.address);
 
         Ok(())
+    }
+
+    /// Fetches a registered contract entry by its contract address.
+    pub fn get_contract(env: Env, address: String) -> Result<ContractEntry, ContractError> {
+        storage::get_contract(&env, &address).ok_or(ContractError::NotFound)
     }
 }
